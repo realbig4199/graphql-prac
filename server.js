@@ -7,63 +7,26 @@ const { buildSchema } = require("graphql");
 // express-graphql 라이브러리로부터 graphqlHTTP 함수 임포트
 // graphqlHTTP 함수를 활용하여 express 서버에 GraphQL 기능을 추가 (express 서버에서 graphql 요청을 처리하기 위한 미들웨어)
 const { graphqlHTTP } = require("express-graphql");
+const { makeExecutableSchema } = require("@graphql-tools/schema");
+const { loadFilesSync } = require("@graphql-tools/load-files");
 
 // express 함수 호출로 app 객체 생성
 const app = express();
 const port = 4000;
 
-// buildSchema 함수를 사용하여 문자열 형태의 스키마 정의 및 GraphQL 스키마 객체로 변환
-// 형식 정의에 들어가는 "!"는 필수값을 의미
-const schema = buildSchema(`
-  type Query {
-    posts: [Post]
-    comments: [Comment]
-  }
+const loadedFiles = loadFilesSync("**/*", {
+  extensions: ["graphql"],
+});
 
-  type Post {
-    id: ID!
-    title: String!
-    description: String!
-    comments: [Comment]
-  }
-
-  type Comment {
-    id: ID!
-    text: String!
-    likes: Int
-  }
-`);
+const schema = makeExecutableSchema({
+  typeDefs: loadedFiles,
+});
 
 // 리졸버 객체 정의
 // 리졸버(resolver) : GraphQL 쿼리를 처리하여 데이터를 반환하는 함수
 const root = {
-  posts: [
-    {
-      id: "post1",
-      title: "It is a first post",
-      description: "It is a first post description",
-      comments: [
-        {
-          id: "comment1",
-          text: "It is a first comment",
-          likes: 1,
-        },
-      ],
-    },
-    {
-      id: "posts2",
-      title: "It is a second post",
-      description: "It is a second post description",
-      comments: [],
-    },
-  ],
-  comments: [
-    {
-      id: "comment1",
-      text: "It is a first comment",
-      likes: 1,
-    },
-  ],
+  posts: require("./posts/posts.model"),
+  comments: require("./comments/comments.model"),
 };
 
 // use 메서드로 미들웨어 함수를 등록
